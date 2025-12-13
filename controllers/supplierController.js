@@ -6,7 +6,7 @@ const sendWhatsApp = require("../utils/sendWhatsApp");
 exports.getAllSuppliers = async (req, res, next) => {
   try {
     const [suppliers] = await db.query(
-      `SELECT id, name, phone, bank_name, bank_account, address, outlet_target 
+      `SELECT id, name, whatsapp, bank_name, bank_account, address, outlet_target 
        FROM suppliers 
        WHERE deleted_at IS NULL 
        ORDER BY id DESC`
@@ -21,7 +21,7 @@ exports.getSupplierById = async (req, res, next) => {
   try {
     const { id } = req.params;
     const [row] = await db.query(
-      `SELECT id, name, phone, bank_name, bank_account, address, outlet_target 
+      `SELECT id, name, whatsapp, bank_name, bank_account, address, outlet_target 
        FROM suppliers 
        WHERE id = ?`,
       [id]
@@ -53,7 +53,7 @@ exports.getSupplierItems = async (req, res, next) => {
 exports.createSupplier = async (req, res, next) => {
   try {
     const requesterId = req.user.id;
-    const { name, phone, bank_name, bank_account, address, outlet_target } =
+    const { name, whatsapp, bank_name, bank_account, address, outlet_target } =
       req.body;
 
     const [result] = await db.query(
@@ -66,7 +66,7 @@ exports.createSupplier = async (req, res, next) => {
         requesterId,
         JSON.stringify({
           name,
-          phone,
+          whatsapp,
           bank_name,
           bank_account,
           address,
@@ -88,7 +88,7 @@ exports.updateSupplier = async (req, res, next) => {
   try {
     const requesterId = req.user.id;
     const { id } = req.params;
-    const { name, phone, bank_name, bank_account, address, outlet_target } =
+    const { name, whatsapp, bank_name, bank_account, address, outlet_target } =
       req.body;
 
     const [result] = await db.query(
@@ -102,7 +102,7 @@ exports.updateSupplier = async (req, res, next) => {
         JSON.stringify({
           id,
           name,
-          phone,
+          whatsapp,
           bank_name,
           bank_account,
           address,
