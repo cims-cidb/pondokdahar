@@ -85,27 +85,29 @@ exports.getSummary = async (req, res, next) => {
  * TOP SELLING ITEMS
  * =========================
  */
-exports.getTopItems = async (req, res, next) => {
+exports.getTopItems = async (req, res) => {
   try {
-    const { date } = req.query;
+    const date = req.query.date || null; // format: 'YYYY-MM-DD' atau null
 
-    const [rows] = await db.query(
+    const [rows] = await pool.query(
       `
-      SELECT 
-        product_name,
-        SUM(quantity) AS total_qty
-      FROM pos_sale_items
-      WHERE (? IS NULL OR DATE(created_at) = ?)
-      GROUP BY product_name
+      SELECT
+        psi.item_name,
+        SUM(psi.qty) AS total_qty
+      FROM pos_sales_items psi
+      JOIN pos_sales ps ON ps.id = psi.pos_sale_id
+      WHERE (? IS NULL OR ps.sale_date = ?)
+      GROUP BY psi.item_name
       ORDER BY total_qty DESC
       LIMIT 5
       `,
-      [date || null, date || null]
+      [date, date]
     );
 
     res.json(rows);
   } catch (err) {
-    next(err);
+    console.error("getTopItems error:", err);
+    res.status(500).json({ message: err.message || "Server error" });
   }
 };
 

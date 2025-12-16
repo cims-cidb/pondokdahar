@@ -1,12 +1,11 @@
 const db = require("../config/db");
 
 // ---------------------------------------------
-// HQ: GET SEMUA STOK
+// HQ: GET SEMUA STOK (CK SAHAJA)
 // ---------------------------------------------
 exports.getAllStock = async (req, res, next) => {
   try {
-    const [rows] = await db.query(
-      `
+    const [rows] = await db.query(`
       SELECT 
         id,
         name AS item_name,
@@ -14,14 +13,13 @@ exports.getAllStock = async (req, res, next) => {
         standard_level AS min_level,
         actual_stock AS on_hand,
         CASE 
-          WHEN on_hand = 0 THEN 'habis'
-          WHEN on_hand <= min_level THEN 'menipis'
+          WHEN actual_stock = 0 THEN 'habis'
+          WHEN actual_stock <= standard_level THEN 'menipis'
           ELSE 'aman'
         END AS status
       FROM stock_items
-      ORDER BY item_name ASC
-      `
-    );
+      ORDER BY name ASC
+    `);
 
     res.json(rows);
   } catch (err) {
@@ -30,26 +28,26 @@ exports.getAllStock = async (req, res, next) => {
 };
 
 // ---------------------------------------------
-// HQ: UPDATE MINIMUM LEVEL (MASTER ADMIN & ADMIN HQ)
+// HQ: UPDATE STANDARD LEVEL
 // ---------------------------------------------
 exports.updateMinLevel = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { min_level } = req.body;
 
-    await db.query(`UPDATE stock_items SET min_level = ? WHERE id = ?`, [
+    await db.query(`UPDATE stock_items SET standard_level = ? WHERE id = ?`, [
       min_level,
       id,
     ]);
 
-    res.json({ message: "Minimum level berjaya dikemaskini" });
+    res.json({ message: "Standard level berjaya dikemaskini" });
   } catch (err) {
     next(err);
   }
 };
 
 // ---------------------------------------------
-// CK: STOCK IN (TAMBAH STOK BARANG)
+// CK: STOCK IN
 // ---------------------------------------------
 exports.stockIn = async (req, res, next) => {
   try {
@@ -64,12 +62,15 @@ exports.stockIn = async (req, res, next) => {
     const { item_id, qty } = req.body;
 
     await db.query(
-      `INSERT INTO stocks (item_id, qty, type, created_by) VALUES (?, ?, 'in', ?)`,
+      `INSERT INTO stocks (item_id, qty, type, created_by)
+       VALUES (?, ?, 'in', ?)`,
       [item_id, qty, user.id]
     );
 
     await db.query(
-      `UPDATE stock_items SET on_hand = on_hand + ? WHERE id = ?`,
+      `UPDATE stock_items
+       SET actual_stock = actual_stock + ?
+       WHERE id = ?`,
       [qty, item_id]
     );
 
@@ -80,15 +81,14 @@ exports.stockIn = async (req, res, next) => {
 };
 
 // ---------------------------------------------
-// CK: LIST HISTORY STOCK IN
+// CK: HISTORY STOCK
 // ---------------------------------------------
 exports.getStockHistory = async (req, res, next) => {
   try {
-    const [rows] = await db.query(
-      `
+    const [rows] = await db.query(`
       SELECT 
         s.id,
-        si.name AS item_name
+        si.name AS item_name,
         s.qty,
         s.type,
         s.created_by,
@@ -96,8 +96,7 @@ exports.getStockHistory = async (req, res, next) => {
       FROM stocks s
       JOIN stock_items si ON si.id = s.item_id
       ORDER BY s.id DESC
-      `
-    );
+    `);
 
     res.json(rows);
   } catch (err) {
